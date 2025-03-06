@@ -1,0 +1,592 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>写实流动的山谷</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            overflow: hidden;
+            background: #0a1f2e;
+            height: 100vh;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading">加载中...</div>
+    <canvas id="scene"></canvas>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('scene');
+            const ctx = canvas.getContext('2d');
+            const loadingElement = document.querySelector('.loading');
+
+            // 设置canvas尺寸
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // 背景图像
+            const bgImage = new Image();
+            bgImage.src = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD//gA7Q1JFQVRPUjogZ2QtanBlZyB2MS4wICh1c2luZyBJSkcgSlBFRyB2NjIpLCBxdWFsaXR5ID0gOTAK/9sAQwADAgIDAgIDAwMDBAMDBAUIBQUEBAUKBwcGCAwKDAwLCgsLDQ4SEA0OEQ4LCxAWEBETFBUVFQwPFxgWFBgSFBUU/9sAQwEDBAQFBAUJBQUJFA0LDRQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQU/8AAEQgBLAEsAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/aAAwDAQACEQMRAD8A+y6KKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD//Z';
+
+            // 储存所有粒子和线条
+            let particles = [];
+            let lines = [];
+            
+            // 背景场景配置
+            const backgroundScenes = [
+                {
+                    name: "清晨/黎明",
+                    skyGradient: [
+                        { position: 0, color: '#1a2980' },   // 深蓝色顶部
+                        { position: 0.4, color: '#26d0ce' }, // 青色中部
+                        { position: 1, color: '#2b5876' }    // 与山脉融合的蓝灰色
+                    ],
+                    farMountainColor: '#1a394d',
+                    mainMountainColor: '#254d47'
+                },
+                {
+                    name: "黄昏/日落",
+                    skyGradient: [
+                        { position: 0, color: '#2c3e50' },   // 深蓝色上方
+                        { position: 0.5, color: '#e74c3c' },  // 橙红色中间
+                        { position: 0.7, color: '#f39c12' },  // 橙黄色下方
+                        { position: 1, color: '#34495e' }    // 与山脉融合的深色
+                    ],
+                    farMountainColor: '#482f2c',
+                    mainMountainColor: '#3d2b1a'
+                },
+                {
+                    name: "夜晚星空",
+                    skyGradient: [
+                        { position: 0, color: '#050A27' },   // 深蓝色近黑夜空
+                        { position: 0.6, color: '#0F1C4D' },  // 深蓝色
+                        { position: 1, color: '#112233' }    // 与山脉融合的深色
+                    ],
+                    farMountainColor: '#0a1520',
+                    mainMountainColor: '#15191f'
+                }
+            ];
+
+            // 背景转换控制
+            const backgroundTransition = {
+                stayDuration: 8000,   // 每个背景停留8秒
+                transitionDuration: 3000, // 过渡时间3秒
+                currentSceneIndex: 0,
+                nextSceneIndex: 1,
+                transitionProgress: 0,
+                isTransitioning: false,
+                transitionStartTime: 0,
+                lastUpdateTime: 0
+            };
+
+            // 山脉数据
+            const mountains = {
+                color: '#253d32', 
+                points: []
+            };
+
+            // 瀑布和河流位置
+            const waterfall = {
+                startX: canvas.width * 0.5,
+                startY: canvas.height * 0.2,
+                endY: canvas.height * 0.6
+            };
+            
+            const river = {
+                points: []
+            };
+
+            // 颜色插值函数
+            function lerpColor(color1, color2, factor) {
+                // 解析颜色
+                const parseColor = (color) => {
+                    const hex = color.charAt(0) === '#';
+                    if (hex) {
+                        const r = parseInt(color.substring(1, 3), 16);
+                        const g = parseInt(color.substring(3, 5), 16);
+                        const b = parseInt(color.substring(5, 7), 16);
+                        return [r, g, b];
+                    }
+                    return [0, 0, 0]; // 默认黑色
+                };
+
+                const [r1, g1, b1] = parseColor(color1);
+                const [r2, g2, b2] = parseColor(color2);
+                
+                const r = Math.round(r1 + (r2 - r1) * factor);
+                const g = Math.round(g1 + (g2 - g1) * factor);
+                const b = Math.round(b1 + (b2 - b1) * factor);
+                
+                return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+            }
+
+            // 更新背景管理状态
+            function updateBackgroundState() {
+                const now = Date.now();
+                
+                if (!backgroundTransition.lastUpdateTime) {
+                    backgroundTransition.lastUpdateTime = now;
+                    backgroundTransition.transitionStartTime = now;
+                    backgroundTransition.isTransitioning = true;
+                    return;
+                }
+                
+                const timeDiff = now - backgroundTransition.lastUpdateTime;
+                backgroundTransition.lastUpdateTime = now;
+                
+                if (backgroundTransition.isTransitioning) {
+                    // 处理过渡中
+                    const elapsedTransition = now - backgroundTransition.transitionStartTime;
+                    backgroundTransition.transitionProgress = Math.min(1, elapsedTransition / backgroundTransition.transitionDuration);
+                    
+                    if (backgroundTransition.transitionProgress >= 1) {
+                        // 过渡完成
+                        backgroundTransition.isTransitioning = false;
+                        backgroundTransition.currentSceneIndex = backgroundTransition.nextSceneIndex;
+                        backgroundTransition.nextSceneIndex = (backgroundTransition.currentSceneIndex + 1) % backgroundScenes.length;
+                        backgroundTransition.stayStartTime = now;
+                    }
+                } else {
+                    // 静止停留阶段
+                    const elapsedStay = now - backgroundTransition.stayStartTime;
+                    if (elapsedStay >= backgroundTransition.stayDuration) {
+                        // 开始新的过渡
+                        backgroundTransition.isTransitioning = true;
+                        backgroundTransition.transitionProgress = 0;
+                        backgroundTransition.transitionStartTime = now;
+                    }
+                }
+            }
+
+            // 获取当前插值的背景场景
+            function getCurrentScene() {
+                if (!backgroundTransition.isTransitioning) {
+                    return backgroundScenes[backgroundTransition.currentSceneIndex];
+                }
+                
+                const currentScene = backgroundScenes[backgroundTransition.currentSceneIndex];
+                const nextScene = backgroundScenes[backgroundTransition.nextSceneIndex];
+                const progress = backgroundTransition.transitionProgress;
+                
+                // 创建插值场景
+                const interpolatedScene = {
+                    name: `${currentScene.name} -> ${nextScene.name}`,
+                    skyGradient: [],
+                    farMountainColor: lerpColor(currentScene.farMountainColor, nextScene.farMountainColor, progress),
+                    mainMountainColor: lerpColor(currentScene.mainMountainColor, nextScene.mainMountainColor, progress)
+                };
+                
+                // 插值天空渐变
+                // 使用第一个场景的渐变位置，但颜色插值
+                currentScene.skyGradient.forEach((stop, index) => {
+                    const nextColor = nextScene.skyGradient[Math.min(index, nextScene.skyGradient.length - 1)].color;
+                    interpolatedScene.skyGradient.push({
+                        position: stop.position,
+                        color: lerpColor(stop.color, nextColor, progress)
+                    });
+                });
+                
+                return interpolatedScene;
+            }
+
+            // 初始化山脉
+            function initMountains() {
+                const baseHeight = canvas.height * 0.65;
+                mountains.points = [];
+                
+                // 生成随机山脉轮廓
+                for (let x = 0; x <= canvas.width; x += canvas.width / 20) {
+                    const height = baseHeight - Math.random() * canvas.height * 0.3;
+                    mountains.points.push({ x, y: height });
+                }
+            }
+
+            // 初始化河流路径
+            function initRiverPath() {
+                river.points = [];
+                let x = waterfall.startX;
+                let y = waterfall.endY;
+                
+                // 瀑布底端作为第一个点
+                river.points.push({ x, y });
+                
+                // 生成蜿蜒的河流
+                for (let i = 1; i <= 8; i++) {
+                    // 河流向右或向左弯曲
+                    const xOffset = (Math.random() - 0.5) * canvas.width * 0.2;
+                    x += xOffset;
+                    y += canvas.height * 0.05;
+                    
+                    // 确保河流不会超出画布边界
+                    x = Math.max(20, Math.min(canvas.width - 20, x));
+                    
+                    river.points.push({ x, y });
+                }
+            }
+            
+            // 粒子类
+            class Particle {
+                constructor(x, y, isWaterfall = false) {
+                    this.x = x;
+                    this.y = y;
+                    this.size = Math.random() * 2 + 1;
+                    this.baseSpeed = isWaterfall ? 8 : 2;
+                    this.speed = Math.random() * this.baseSpeed + 1;
+                    this.isWaterfall = isWaterfall;
+                    this.opacity = Math.random() * 0.8 + 0.2;
+                    this.originX = x;
+                    this.pathIndex = isWaterfall ? -1 : 0;  // 瀑布粒子不跟随路径
+                    this.pathProgress = 0;
+                    this.color = `rgba(255, 255, 255, ${this.opacity})`;
+                }
+                
+                update() {
+                    if (this.isWaterfall) {
+                        // 瀑布粒子垂直下落
+                        this.y += this.speed;
+                        
+                        // 轻微水平偏移
+                        this.x = this.originX + Math.sin(this.y * 0.05) * 5;
+                        
+                        // 到达瀑布底部后重新生成
+                        if (this.y > waterfall.endY) {
+                            this.y = waterfall.startY;
+                            this.opacity = Math.random() * 0.8 + 0.2;
+                            this.color = `rgba(255, 255, 255, ${this.opacity})`;
+                        }
+                    } else {
+                        // 河流粒子沿路径移动
+                        this.pathProgress += 0.01 * this.speed;
+                        
+                        if (this.pathIndex < river.points.length - 1) {
+                            const current = river.points[this.pathIndex];
+                            const next = river.points[this.pathIndex + 1];
+                            
+                            // 路径插值
+                            this.x = current.x + (next.x - current.x) * this.pathProgress;
+                            this.y = current.y + (next.y - current.y) * this.pathProgress;
+                            
+                            // 达到下一个路径点
+                            if (this.pathProgress >= 1) {
+                                this.pathIndex++;
+                                this.pathProgress = 0;
+                            }
+                        } else {
+                            // 到达河流末端，重新生成
+                            this.pathIndex = 0;
+                            this.pathProgress = 0;
+                            this.opacity = Math.random() * 0.8 + 0.2;
+                            this.color = `rgba(255, 255, 255, ${this.opacity})`;
+                        }
+                    }
+                }
+                
+                draw() {
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            // 线条类，表示水流动时的连接线
+            class Line {
+                constructor(p1, p2) {
+                    this.p1 = p1;
+                    this.p2 = p2;
+                    this.life = 10;
+                    this.opacity = Math.min(p1.opacity, p2.opacity) * 0.5;
+                    this.color = `rgba(200, 230, 255, ${this.opacity})`;
+                }
+                
+                update() {
+                    this.life--;
+                    this.opacity *= 0.95;
+                }
+                
+                draw() {
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(this.p1.x, this.p1.y);
+                    ctx.lineTo(this.p2.x, this.p2.y);
+                    ctx.stroke();
+                }
+            }
+            
+            // 初始化所有粒子
+            function initParticles() {
+                particles = [];
+                
+                // 创建瀑布粒子
+                for (let i = 0; i < 200; i++) {
+                    const x = waterfall.startX + (Math.random() - 0.5) * 40;  // 瀑布宽度
+                    const y = waterfall.startY + Math.random() * (waterfall.endY - waterfall.startY);
+                    particles.push(new Particle(x, y, true));
+                }
+                
+                // 创建河流粒子
+                for (let i = 0; i < 600; i++) { // 增加河流粒子数量
+                    // 随机选择一个河流路径点开始
+                    const pathIndex = Math.floor(Math.random() * river.points.length);
+                    const point = river.points[pathIndex];
+                    
+                    const particle = new Particle(point.x, point.y, false);
+                    particle.pathIndex = pathIndex;
+                    particle.pathProgress = Math.random();
+                    particles.push(particle);
+                }
+            }
+
+            // 画星星函数
+            function drawStars(opacity = 1) {
+                // 使用伪随机确保星星位置固定
+                let seed = 12345;
+                const starCount = 100;
+                
+                function pseudoRandom() {
+                    seed = (seed * 9301 + 49297) % 233280;
+                    return seed / 233280;
+                }
+                
+                ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.8})`;
+                
+                for (let i = 0; i < starCount; i++) {
+                    const x = pseudoRandom() * canvas.width;
+                    const y = pseudoRandom() * canvas.height * 0.5; // 只在上半部分天空
+                    const size = pseudoRandom() * 2 + 0.5;
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // 有时候添加十字光芒
+                    if (pseudoRandom() > 0.8) {
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.5})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(x - size * 2, y);
+                        ctx.lineTo(x + size * 2, y);
+                        ctx.moveTo(x, y - size * 2);
+                        ctx.lineTo(x, y + size * 2);
+                        ctx.stroke();
+                    }
+                }
+            }
+            
+            // 绘制背景和山脉
+            function drawBackground() {
+                // 更新背景状态
+                updateBackgroundState();
+                
+                // 获取当前插值的场景
+                const currentScene = getCurrentScene();
+                
+                // 绘制渐变背景
+                const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                
+                // 应用当前场景的天空渐变
+                currentScene.skyGradient.forEach(stop => {
+                    gradient.addColorStop(stop.position, stop.color);
+                });
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // 绘制远山
+                ctx.fillStyle = currentScene.farMountainColor;
+                ctx.beginPath();
+                ctx.moveTo(0, canvas.height * 0.5);
+                
+                for (let i = 0; i < canvas.width; i += 20) {
+                    const height = canvas.height * 0.5 + Math.sin(i * 0.01) * 30 + Math.random() * 10;
+                    ctx.lineTo(i, height);
+                }
+                
+                ctx.lineTo(canvas.width, canvas.height * 0.5);
+                ctx.lineTo(canvas.width, canvas.height);
+                ctx.lineTo(0, canvas.height);
+                ctx.closePath();
+                ctx.fill();
+                
+                // 应用当前的主山脉颜色
+                mountains.color = currentScene.mainMountainColor;
+                
+                // 绘制主山脉
+                ctx.fillStyle = mountains.color;
+                ctx.beginPath();
+                ctx.moveTo(0, canvas.height);
+                
+                mountains.points.forEach(point => {
+                    ctx.lineTo(point.x, point.y);
+                });
+                
+                ctx.lineTo(canvas.width, canvas.height);
+                ctx.closePath();
+                ctx.fill();
+                
+                // 添加星星（仅在夜晚场景或向夜晚过渡时）
+                const nightIndex = 2; // 夜晚场景的索引
+                const isNightOrTransitionToNight = 
+                    backgroundTransition.currentSceneIndex === nightIndex || 
+                    (backgroundTransition.isTransitioning && backgroundTransition.nextSceneIndex === nightIndex);
+                    
+                if (isNightOrTransitionToNight) {
+                    const starOpacity = backgroundTransition.isTransitioning && backgroundTransition.nextSceneIndex === nightIndex
+                        ? backgroundTransition.transitionProgress
+                        : backgroundTransition.isTransitioning && backgroundTransition.currentSceneIndex === nightIndex
+                            ? 1 - backgroundTransition.transitionProgress
+                            : 1;
+                            
+                    drawStars(starOpacity);
+                }
+            }
+            
+            
+                // 绘制河道
+function drawRiverBed() {
+    // 绘制河道基本形状
+    ctx.strokeStyle = 'rgba(30, 50, 70, 0.7)';
+    ctx.lineWidth = 80; // 加宽河道
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    ctx.beginPath();
+    river.points.forEach((point, i) => {
+        if (i === 0) ctx.moveTo(point.x, point.y);
+        else ctx.lineTo(point.x, point.y);
+    });
+    ctx.stroke();
+    
+    // 绘制河道边缘凸起
+    ctx.strokeStyle = 'rgba(35, 65, 50, 0.8)';
+    ctx.lineWidth = 85; // 稍微大于河道宽度
+    ctx.lineCap = 'butt';
+    
+    ctx.beginPath();
+    river.points.forEach((point, i) => {
+        if (i === 0) ctx.moveTo(point.x, point.y);
+        else ctx.lineTo(point.x, point.y);
+    });
+    ctx.stroke();
+}
+
+// 更新和绘制所有元素
+function update() {
+    // 清除画布
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // 绘制背景和山脉
+    drawBackground();
+    
+    // 绘制河道
+    drawRiverBed();
+    
+    // 更新和绘制线条
+    lines = lines.filter(line => line.life > 0);
+    lines.forEach(line => {
+        line.update();
+        line.draw();
+    });
+    
+    // 更新和绘制粒子
+    particles.forEach(particle => {
+        particle.update();
+        particle.draw();
+    });
+    
+    // 随机添加连接线
+    if (Math.random() > 0.7) {
+        const p1 = particles[Math.floor(Math.random() * particles.length)];
+        const p2 = particles[Math.floor(Math.random() * particles.length)];
+        
+        // 确保粒子距离不太远
+        const distance = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        if (distance < 30) {
+            lines.push(new Line(p1, p2));
+        }
+    }
+    
+    // 请求下一帧动画
+    requestAnimationFrame(update);
+}
+
+// 初始化场景
+function initScene() {
+    loadingElement.style.display = 'none';
+    
+    // 设置瀑布位置
+    waterfall.startX = canvas.width * 0.5;
+    waterfall.startY = canvas.height * 0.2;
+    waterfall.endY = canvas.height * 0.6;
+    
+    initMountains();
+    initRiverPath();
+    initParticles();
+    
+    // 初始化背景过渡
+    backgroundTransition.stayStartTime = Date.now();
+    backgroundTransition.lastUpdateTime = Date.now();
+    
+    // 开始动画循环
+    update();
+}
+
+// 处理窗口大小变化
+window.addEventListener('resize', () => {
+    resizeCanvas();
+    
+    // 重新调整瀑布位置
+    waterfall.startX = canvas.width * 0.5;
+    waterfall.startY = canvas.height * 0.2;
+    waterfall.endY = canvas.height * 0.6;
+    
+    // 重新初始化场景
+    initMountains();
+    initRiverPath();
+    initParticles();
+});
+
+// 加载背景图像后初始化场景
+if (bgImage.complete) {
+    initScene();
+} else {
+    bgImage.onload = initScene;
+}
+        });
+    </script>
+</body>
+</html>
